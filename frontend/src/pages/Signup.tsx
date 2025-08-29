@@ -14,17 +14,17 @@ const Signup = () => {
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
+  const [speciality, setSpeciality] = useState('');
+  const [otherSpeciality, setOtherSpeciality] = useState('');
+  const [yearsExperience, setYearsExperience] = useState(1);
 
   useEffect(() => {
     const roleParam = searchParams.get('role');
-    if (roleParam) {
-      setRole(roleParam);
-    }
+    if (roleParam) setRole(roleParam);
   }, [searchParams]);
 
   const handleSignup = (e: React.FormEvent) => {
     e.preventDefault();
-    // For demo purposes, redirect based on role
     if (role === 'patient') {
       navigate('/patient-dashboard');
     } else {
@@ -36,17 +36,15 @@ const Signup = () => {
     <div className="min-h-screen bg-background flex">
       {/* Left Side - Form */}
       <div className="flex-1 flex flex-col">
-        {/* Navigation */}
         <nav className="flex items-center p-6">
           <div className="flex items-center space-x-2">
             <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
               <Stethoscope className="w-5 h-5 text-primary-foreground" />
             </div>
-            <span className="text-xl font-bold text-foreground">HealthFirst</span>
+            <span className="text-xl font-bold text-foreground">HealthConnect</span>
           </div>
         </nav>
 
-        {/* Form Content */}
         <div className="flex-1 flex items-center justify-center px-6">
           <div className="w-full max-w-md">
             <div className="mb-8">
@@ -55,6 +53,7 @@ const Signup = () => {
             </div>
 
             <form onSubmit={handleSignup} className="space-y-6">
+              {/* Role Selection */}
               <div>
                 <Label className="text-foreground mb-4 block">I am a...</Label>
                 <div className="flex space-x-4">
@@ -77,6 +76,7 @@ const Signup = () => {
                 </div>
               </div>
 
+              {/* Full Name */}
               <div>
                 <Label htmlFor="fullName" className="text-foreground">Full Name</Label>
                 <Input
@@ -90,6 +90,7 @@ const Signup = () => {
                 />
               </div>
 
+              {/* Phone */}
               <div>
                 <Label htmlFor="phone" className="text-foreground">Contact Number</Label>
                 <Input
@@ -103,6 +104,7 @@ const Signup = () => {
                 />
               </div>
 
+              {/* Email */}
               <div>
                 <Label htmlFor="email" className="text-foreground">Email address</Label>
                 <Input
@@ -116,6 +118,7 @@ const Signup = () => {
                 />
               </div>
 
+              {/* Password */}
               <div>
                 <Label htmlFor="password" className="text-foreground">Password</Label>
                 <Input
@@ -128,6 +131,62 @@ const Signup = () => {
                   required
                 />
               </div>
+
+              {/* Doctor Fields */}
+              {role === 'doctor' && (
+                <>
+                  {/* Speciality */}
+                  <div>
+                    <Label htmlFor="speciality" className="text-foreground">Speciality</Label>
+                    <select
+                      id="speciality"
+                      value={speciality}
+                      onChange={(e) => setSpeciality(e.target.value)}
+                      className="mt-1 w-full p-2 border border-border rounded-md bg-input text-foreground"
+                      required
+                    >
+                      <option value="">Select Speciality</option>
+                      <option value="Cardiologist">Cardiologist</option>
+                      <option value="Dermatologist">Dermatologist</option>
+                      <option value="Neurologist">Neurologist</option>
+                      <option value="Pediatrician">Pediatrician</option>
+                      <option value="Orthopedic">Orthopedic</option>
+                      <option value="General Physician">General Physician</option>
+                      <option value="Other">Other</option>
+                    </select>
+                  </div>
+
+                  {/* Other Speciality */}
+                  {speciality === 'Other' && (
+                    <div>
+                      <Label htmlFor="otherSpeciality" className="text-foreground">Enter your speciality</Label>
+                      <Input
+                        id="otherSpeciality"
+                        type="text"
+                        value={otherSpeciality}
+                        onChange={(e) => setOtherSpeciality(e.target.value)}
+                        placeholder="Enter speciality"
+                        className="mt-1 bg-input border-border text-foreground"
+                        required
+                      />
+                    </div>
+                  )}
+
+                  {/* Years of Experience */}
+                  <div>
+                    <Label htmlFor="experience" className="text-foreground">Years of Experience</Label>
+                    <Input
+                      id="experience"
+                      type="number"
+                      min={0}
+                      value={yearsExperience}
+                      onChange={(e) => setYearsExperience(Number(e.target.value))}
+                      className="mt-1 bg-input border-border text-foreground"
+                      required
+                    />
+                  </div>
+                </>
+              )}
 
               <Button type="submit" className="w-full">
                 Sign up

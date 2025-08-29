@@ -1,24 +1,29 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { 
   Calendar, 
   MessageCircle, 
   User, 
-  Settings, 
   Plus,
   Clock,
-  Stethoscope,
   LayoutDashboard,
-  CalendarPlus
+  CalendarPlus,
+  LogOut
 } from 'lucide-react';
 import doctorEmily from '@/assets/doctor-emily-carter.jpg';
 import doctorRobert from '@/assets/doctor-robert-harris.jpg';
 
 const PatientDashboard = () => {
   const navigate = useNavigate();
+
+  const handleLogout = () => {
+    // Clear tokens or auth state here
+    localStorage.removeItem('token'); // example
+    navigate('/');
+  };
 
   return (
     <div className="min-h-screen bg-background flex">
@@ -75,9 +80,9 @@ const PatientDashboard = () => {
             <h1 className="text-3xl font-bold text-foreground">Dashboard</h1>
             <p className="text-muted-foreground">Welcome back, Sophia!</p>
           </div>
-          <Button onClick={() => navigate('/')}>
-            <Settings className="w-4 h-4 mr-2" />
-            Settings
+          <Button variant="destructive" onClick={handleLogout}>
+            <LogOut className="w-4 h-4 mr-2" />
+            Logout
           </Button>
         </div>
 
@@ -114,9 +119,7 @@ const PatientDashboard = () => {
                     <Clock className="w-4 h-4 mr-2" />
                     10:30 AM
                   </div>
-                  <Button className="w-full">
-                    View Details
-                  </Button>
+                  <Button className="w-full">View Details</Button>
                 </div>
               </CardContent>
             </Card>
@@ -147,14 +150,12 @@ const PatientDashboard = () => {
                     <Clock className="w-4 h-4 mr-2" />
                     2:00 PM
                   </div>
-                  <Button variant="secondary" className="w-full">
-                    Reschedule
-                  </Button>
+                  <Button variant="secondary" className="w-full">Reschedule</Button>
                 </div>
               </CardContent>
             </Card>
 
-            {/* Book New Appointment Card */}
+            {/* Book New Appointment */}
             <Card 
               className="bg-healthcare-card border-2 border-dashed border-border hover:border-primary/50 cursor-pointer transition-colors"
               onClick={() => navigate('/book-appointment')}

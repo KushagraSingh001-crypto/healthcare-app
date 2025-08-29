@@ -1,23 +1,21 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { 
   Calendar, 
   MessageCircle, 
   User, 
-  Settings, 
   Clock,
-  Stethoscope,
   LayoutDashboard,
   CalendarCheck,
-  Users,
   CheckCircle,
   XCircle,
   Phone,
-  Video
+  Video,
+  LogOut
 } from 'lucide-react';
 
 const DoctorDashboard = () => {
@@ -53,9 +51,14 @@ const DoctorDashboard = () => {
     }
   ];
 
-  const handleAppointmentAction = (appointmentId: number, action: 'accept' | 'reject') => {
-    // Here you would handle the appointment action
+  const handleAppointmentAction = (appointmentId, action) => {
     console.log(`${action} appointment ${appointmentId}`);
+  };
+
+  const handleLogout = () => {
+    // Clear tokens or auth state here
+    localStorage.removeItem('token'); // example
+    navigate('/');
   };
 
   return (
@@ -88,7 +91,7 @@ const DoctorDashboard = () => {
           <Button 
             variant="ghost" 
             className="w-full justify-start text-muted-foreground hover:text-foreground"
-            onClick={() => navigate('/messages')}
+            onClick={() => navigate('/doctor-messages')}
           >
             <MessageCircle className="w-4 h-4 mr-3" />
             Messages
@@ -96,13 +99,7 @@ const DoctorDashboard = () => {
           <Button 
             variant="ghost" 
             className="w-full justify-start text-muted-foreground hover:text-foreground"
-          >
-            <Users className="w-4 h-4 mr-3" />
-            Patients
-          </Button>
-          <Button 
-            variant="ghost" 
-            className="w-full justify-start text-muted-foreground hover:text-foreground"
+            onClick={() => navigate('/doctor-profile')}
           >
             <User className="w-4 h-4 mr-3" />
             Profile
@@ -118,15 +115,10 @@ const DoctorDashboard = () => {
             <h1 className="text-3xl font-bold text-foreground">Dashboard</h1>
             <p className="text-muted-foreground">Manage your appointments and patients</p>
           </div>
-          <div className="flex items-center space-x-4">
-            <Button variant="secondary">
-              <Settings className="w-4 h-4 mr-2" />
-              Settings
-            </Button>
-            <Button onClick={() => navigate('/')}>
-              Log Out
-            </Button>
-          </div>
+          <Button variant="destructive" onClick={handleLogout}>
+            <LogOut className="w-4 h-4 mr-2" />
+            Logout
+          </Button>
         </div>
 
         {/* Stats Cards */}
@@ -149,7 +141,7 @@ const DoctorDashboard = () => {
             <CardContent className="p-6">
               <div className="flex items-center">
                 <div className="w-12 h-12 bg-healthcare-teal/20 rounded-full flex items-center justify-center">
-                  <Users className="w-6 h-6 text-healthcare-teal" />
+                  <User className="w-6 h-6 text-healthcare-teal" />
                 </div>
                 <div className="ml-4">
                   <p className="text-sm text-muted-foreground">Total Patients</p>
@@ -191,7 +183,6 @@ const DoctorDashboard = () => {
         {/* Appointment Requests */}
         <div className="mb-8">
           <h2 className="text-2xl font-semibold text-foreground mb-6">Appointment Requests</h2>
-          
           <div className="space-y-4">
             {appointments.map((appointment) => (
               <Card key={appointment.id} className="bg-healthcare-card border-border">
@@ -219,11 +210,8 @@ const DoctorDashboard = () => {
                         </div>
                       </div>
                     </div>
-                    
                     <div className="flex items-center space-x-3">
-                      <Badge 
-                        variant={appointment.status === 'confirmed' ? 'default' : 'secondary'}
-                      >
+                      <Badge variant={appointment.status === 'confirmed' ? 'default' : 'secondary'}>
                         {appointment.status}
                       </Badge>
                       {appointment.status === 'pending' && (
@@ -253,9 +241,7 @@ const DoctorDashboard = () => {
                           <Button size="sm" variant="secondary">
                             <Video className="w-4 h-4" />
                           </Button>
-                          <Button size="sm">
-                            View Details
-                          </Button>
+                          <Button size="sm">View Details</Button>
                         </div>
                       )}
                     </div>

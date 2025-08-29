@@ -10,16 +10,38 @@ const Landing = () => {
     <div className="min-h-screen bg-background">
       {/* Navigation */}
       <nav className="flex items-center justify-between p-6">
+        {/* Logo */}
         <div className="flex items-center space-x-2">
           <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
             <Stethoscope className="w-5 h-5 text-primary-foreground" />
           </div>
           <span className="text-xl font-bold text-foreground">HealthConnect</span>
         </div>
+
+        {/* Center Navigation */}
+        <div className="flex-1 flex justify-center space-x-8">
+          <span 
+            className="text-muted-foreground hover:text-foreground cursor-pointer"
+            onClick={() => navigate('/about')}
+          >
+            About
+          </span>
+          <span 
+            className="text-muted-foreground hover:text-foreground cursor-pointer"
+            onClick={() => navigate('/services')}
+          >
+            Services
+          </span>
+          <span 
+            className="text-muted-foreground hover:text-foreground cursor-pointer"
+            onClick={() => navigate('/contact')}
+          >
+            Contact
+          </span>
+        </div>
+
+        {/* Auth Buttons */}
         <div className="flex space-x-4">
-          <span className="text-muted-foreground hover:text-foreground cursor-pointer">About</span>
-          <span className="text-muted-foreground hover:text-foreground cursor-pointer">Services</span>
-          <span className="text-muted-foreground hover:text-foreground cursor-pointer">Contact</span>
           <Button variant="secondary" onClick={() => navigate('/login')}>Login</Button>
           <Button onClick={() => navigate('/signup')}>Sign Up</Button>
         </div>

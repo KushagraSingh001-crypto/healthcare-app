@@ -4,18 +4,17 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { 
-  Send, 
-  Paperclip, 
+import {
+  Send,
+  Paperclip,
   Stethoscope,
   ArrowLeft,
   Bell,
   Phone,
   Video
 } from 'lucide-react';
-import doctorEmily from '@/assets/doctor-emily-carter.jpg';
 
-const Messages = () => {
+const DoctorMessages = () => {
   const navigate = useNavigate();
   const [newMessage, setNewMessage] = useState('');
 
@@ -25,7 +24,7 @@ const Messages = () => {
       sender: 'doctor',
       content: "Hello, Sarah! How are you feeling today?",
       time: '10:30 AM',
-      avatar: doctorEmily
+      avatar: ''
     },
     {
       id: 2,
@@ -39,11 +38,11 @@ const Messages = () => {
       sender: 'doctor',
       content: "Okay, I'll adjust your medication dosage. Please take it twice a day, and let me know if the discomfort persists.",
       time: '10:32 AM',
-      avatar: doctorEmily
+      avatar: ''
     }
   ];
 
-  const handleSendMessage = (e: React.FormEvent) => {
+  const handleSendMessage = (e) => {
     e.preventDefault();
     if (!newMessage.trim()) return;
     // Normally send to backend
@@ -55,7 +54,7 @@ const Messages = () => {
       {/* Navigation */}
       <nav className="flex items-center justify-between p-6 border-b border-border">
         <div className="flex items-center space-x-4">
-          <Button variant="ghost" size="sm" onClick={() => navigate('/patient-dashboard')}>
+          <Button variant="ghost" size="sm" onClick={() => navigate('/doctor-dashboard')}>
             <ArrowLeft className="w-4 h-4" />
           </Button>
           <div className="flex items-center space-x-2 cursor-pointer" onClick={() => navigate('/')}>
@@ -66,14 +65,13 @@ const Messages = () => {
           </div>
         </div>
         <div className="flex items-center space-x-4">
-          <Button variant="ghost" size="sm" onClick={() => navigate('/patient-dashboard')}>Dashboard</Button>
-          <Button variant="ghost" size="sm" onClick={() => navigate('/appointments')}>Appointments</Button>
+          <Button variant="ghost" size="sm" onClick={() => navigate('/doctor-dashboard')}>Dashboard</Button>
           <Button variant="ghost" size="sm" className="text-primary" onClick={() => navigate('/messages')}>Messages</Button>
-          <Button variant="ghost" size="sm" onClick={() => navigate('/profile')}>Profile</Button>
+          <Button variant="ghost" size="sm" onClick={() => navigate('/doctor-profile')}>Profile</Button>
           <Bell className="w-5 h-5 text-muted-foreground cursor-pointer" />
-          <Avatar className="w-8 h-8 cursor-pointer" onClick={() => navigate('/profile')}>
+          <Avatar className="w-8 h-8 cursor-pointer" onClick={() => navigate('/doctor-profile')}>
             <AvatarImage src="" />
-            <AvatarFallback className="bg-primary text-primary-foreground text-sm">SC</AvatarFallback>
+            <AvatarFallback className="bg-primary text-primary-foreground text-sm">DC</AvatarFallback>
           </Avatar>
         </div>
       </nav>
@@ -86,12 +84,12 @@ const Messages = () => {
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-4">
                 <Avatar className="w-12 h-12">
-                  <AvatarImage src={doctorEmily} />
-                  <AvatarFallback>DC</AvatarFallback>
+                  <AvatarImage src="" />
+                  <AvatarFallback className="bg-primary text-primary-foreground">SJ</AvatarFallback>
                 </Avatar>
                 <div>
-                  <h2 className="text-xl font-semibold text-foreground">Dr. Amelia Carter</h2>
-                  <p className="text-sm text-muted-foreground">Cardiologist</p>
+                  <h2 className="text-xl font-semibold text-foreground">Sarah Johnson</h2>
+                  <p className="text-sm text-muted-foreground">Patient</p>
                 </div>
               </div>
               <div className="flex items-center space-x-2">
@@ -109,29 +107,29 @@ const Messages = () => {
           <div className="flex-1 p-6 overflow-y-auto">
             <div className="space-y-6">
               {messages.map((message) => (
-                <div key={message.id} className={`flex ${message.sender === 'patient' ? 'justify-end' : 'justify-start'}`}>
-                  {message.sender === 'doctor' && (
+                <div key={message.id} className={`flex ${message.sender === 'doctor' ? 'justify-end' : 'justify-start'}`}>
+                  {message.sender === 'patient' && (
                     <Avatar className="w-8 h-8 mr-3">
-                      <AvatarImage src={message.avatar} />
-                      <AvatarFallback>DC</AvatarFallback>
+                      <AvatarImage src="" />
+                      <AvatarFallback className="bg-primary text-primary-foreground">SJ</AvatarFallback>
                     </Avatar>
                   )}
-                  <div className={`max-w-md ${message.sender === 'patient' ? 'order-1' : ''}`}>
+                  <div className={`max-w-md ${message.sender === 'doctor' ? 'order-1' : ''}`}>
                     <div className={`p-4 rounded-2xl ${
-                      message.sender === 'patient' 
-                        ? 'bg-primary text-primary-foreground' 
+                      message.sender === 'doctor'
+                        ? 'bg-primary text-primary-foreground'
                         : 'bg-healthcare-card text-foreground'
                     }`}>
                       <p>{message.content}</p>
                     </div>
                     <p className="text-xs text-muted-foreground mt-1 px-2">
-                      {message.sender === 'patient' ? 'You · ' : 'Dr. Amelia Carter · '}{message.time}
+                      {message.sender === 'doctor' ? 'You · ' : 'Sarah Johnson · '}{message.time}
                     </p>
                   </div>
-                  {message.sender === 'patient' && (
+                  {message.sender === 'doctor' && (
                     <Avatar className="w-8 h-8 ml-3">
                       <AvatarImage src="" />
-                      <AvatarFallback className="bg-primary text-primary-foreground">SC</AvatarFallback>
+                      <AvatarFallback className="bg-primary text-primary-foreground">DC</AvatarFallback>
                     </Avatar>
                   )}
                 </div>
@@ -164,11 +162,11 @@ const Messages = () => {
         <div className="w-80 bg-healthcare-card border-l border-border p-6">
           <div className="text-center mb-6">
             <Avatar className="w-20 h-20 mx-auto mb-4">
-              <AvatarImage src={doctorEmily} />
-              <AvatarFallback className="text-2xl">DC</AvatarFallback>
+              <AvatarImage src="" />
+              <AvatarFallback className="text-2xl bg-primary text-primary-foreground">SJ</AvatarFallback>
             </Avatar>
-            <h3 className="text-xl font-semibold text-foreground mb-1">Dr. Amelia Carter</h3>
-            <p className="text-muted-foreground">Cardiologist</p>
+            <h3 className="text-xl font-semibold text-foreground mb-1">Sarah Johnson</h3>
+            <p className="text-muted-foreground">Patient</p>
           </div>
 
           <div className="space-y-6">
@@ -177,17 +175,37 @@ const Messages = () => {
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Age</span>
-                  <span className="text-foreground">30</span>
+                  <span className="text-foreground">32</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Gender</span>
                   <span className="text-foreground">Female</span>
                 </div>
                 <div className="flex justify-between">
+                  <span className="text-muted-foreground">Blood Type</span>
+                  <span className="text-foreground">O+</span>
+                </div>
+                <div className="flex justify-between">
                   <span className="text-muted-foreground">Condition</span>
                   <span className="text-foreground">Back Pain</span>
                 </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Allergies</span>
+                  <span className="text-foreground">None</span>
+                </div>
               </div>
+            </div>
+
+            <div>
+              <h4 className="font-semibold text-foreground mb-3">Recent Medical History</h4>
+              <Card className="bg-background border-border">
+                <CardContent className="p-4">
+                  <div className="text-sm">
+                    <h5 className="font-medium text-foreground mb-1">Lower Back Pain Treatment</h5>
+                    <p className="text-muted-foreground">Started: Oct 15, 2024</p>
+                  </div>
+                </CardContent>
+              </Card>
             </div>
 
             <div>
@@ -196,15 +214,27 @@ const Messages = () => {
                 <CardContent className="p-4">
                   <div className="text-sm">
                     <h5 className="font-medium text-foreground mb-1">Follow-up Consultation</h5>
-                    <p className="text-muted-foreground">October 26, 2024, 10:00 AM</p>
+                    <p className="text-muted-foreground">December 22, 2023, 2:00 PM</p>
                   </div>
                 </CardContent>
               </Card>
               <Card className="bg-background border-border mt-3">
                 <CardContent className="p-4">
                   <div className="text-sm">
-                    <h5 className="font-medium text-foreground mb-1">Physical Therapy Session</h5>
-                    <p className="text-muted-foreground">November 15, 2024, 2:00 PM</p>
+                    <h5 className="font-medium text-foreground mb-1">Physical Therapy Review</h5>
+                    <p className="text-muted-foreground">January 5, 2024, 11:00 AM</p>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            <div>
+              <h4 className="font-semibold text-foreground mb-3">Current Medications</h4>
+              <Card className="bg-background border-border">
+                <CardContent className="p-4">
+                  <div className="text-sm">
+                    <h5 className="font-medium text-foreground mb-1">Ibuprofen 400mg</h5>
+                    <p className="text-muted-foreground">Twice daily with meals</p>
                   </div>
                 </CardContent>
               </Card>
@@ -216,4 +246,4 @@ const Messages = () => {
   );
 };
 
-export default Messages;
+export default DoctorMessages;
