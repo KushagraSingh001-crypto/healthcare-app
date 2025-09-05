@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -15,94 +15,144 @@ import {
   Trash2,
   MessageCircle,
   Phone,
-  Video
+  Video,
+  Loader2
 } from 'lucide-react';
-import doctorEmily from '@/assets/doctor-emily-carter.jpg';
-import doctorRobert from '@/assets/doctor-robert-harris.jpg';
+import { appointmentAPI } from '@/services/api';
 
 const Appointments = () => {
   const navigate = useNavigate();
+  const [appointments, setAppointments] = useState({ upcoming: [], past: [] });
+  const [loading, setLoading] = useState(true);
+  const [actionLoading, setActionLoading] = useState(null);
+  const [error, setError] = useState(null);
 
-  // TODO: Backend Integration - Fetch user's appointments from database
-  // This should get appointments based on current user's ID
-  const appointments = {
-    upcoming: [
-      {
-        id: 1,
-        doctorName: 'Dr. Emily Carter',
-        doctorImage: doctorEmily,
-        specialty: 'General Practitioner',
-        date: '2023-12-18',
-        time: '10:30 AM',
-        type: 'General Consultation',
-        status: 'confirmed',
-        reason: 'Regular checkup and health assessment'
-      },
-      {
-        id: 2,
-        doctorName: 'Dr. Robert Harris',
-        doctorImage: doctorRobert,
-        specialty: 'Cardiologist',
-        date: '2023-12-22',
-        time: '2:00 PM',
-        type: 'Follow-up',
-        status: 'pending',
-        reason: 'Follow-up for cardiovascular health monitoring'
+  useEffect(() => {
+    fetchAppointments();
+  }, []);
+
+  const fetchAppointments = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const response = await appointmentAPI.getUserAppointments();
+      const allAppointments = response.data.data; 
+      
+      const now = new Date();
+      const upcoming = [];
+      const past = [];
+      
+      allAppointments.forEach(appointment => {
+        
+        const appointmentDate = new Date(appointment.date);
+        const [hours, minutes] = appointment.time.split(':');
+        appointmentDate.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+        
+      
+        if (appointmentDate >= now && ['pending', 'confirmed'].includes(appointment.status)) {
+          upcoming.push({
+            id: appointment.id,
+            doctorName: appointment.doctorName,
+            doctorEmail: appointment.doctorEmail,
+            doctorImage: null, 
+            specialty: appointment.specialty,
+            date: appointment.date,
+            time: appointment.time,
+            type: appointment.type,
+            status: appointment.status,
+            reason: appointment.reason,
+            notes: appointment.notes,
+            createdAt: appointment.createdAt
+          });
+        } else {
+          past.push({
+            id: appointment.id,
+            doctorName: appointment.doctorName,
+            doctorEmail: appointment.doctorEmail,
+            doctorImage: null,
+            specialty: appointment.specialty,
+            date: appointment.date,
+            time: appointment.time,
+            type: appointment.type,
+            status: appointment.status,
+            reason: appointment.reason,
+            notes: appointment.notes,
+            createdAt: appointment.createdAt
+          });
+        }
+      });
+      
+      setAppointments({ upcoming, past });
+    } catch (error) {
+      console.error('Failed to fetch appointments:', error);
+      
+      if (error.response?.status === 401) {
+        setError('Please log in to view your appointments.');
+      } else if (error.response?.status === 500) {
+        setError('Server error. Please try again later.');
+      } else {
+        setError(error.response?.data?.message || 'Failed to load appointments. Please try again.');
       }
-    ],
-    past: [
-      {
-        id: 3,
-        doctorName: 'Dr. Emily Carter',
-        doctorImage: doctorEmily,
-        specialty: 'General Practitioner',
-        date: '2023-12-10',
-        time: '11:00 AM',
-        type: 'General Consultation',
-        status: 'completed',
-        reason: 'Annual physical examination'
-      }
-    ]
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleReschedule = (appointmentId) => {
-    // TODO: Backend Integration - Update appointment in database
-    // Navigate to booking page with appointment data pre-filled
+    
     navigate(`/book-appointment?reschedule=${appointmentId}`);
   };
 
   const handleCancel = async (appointmentId) => {
-    // TODO: Backend Integration - Cancel appointment
-    /*
+    if (!window.confirm('Are you sure you want to cancel this appointment?')) {
+      return;
+    }
+
     try {
-      const response = await fetch(`/api/appointments/${appointmentId}/cancel`, {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${getAuthToken()}`
-        }
-      });
+      setActionLoading(appointmentId);
+      setError(null);
       
-      if (response.ok) {
-        // Send cancellation notification to doctor
-        await sendCancellationNotification(appointmentId);
-        // Refresh appointments list
-        fetchAppointments();
-      }
+      await appointmentAPI.cancelAppointment(appointmentId);
+      
+      await fetchAppointments();
+      
+      console.log('Appointment cancelled successfully');
     } catch (error) {
       console.error('Failed to cancel appointment:', error);
+      setError(error.response?.data?.message || 'Failed to cancel appointment. Please try again.');
+    } finally {
+      setActionLoading(null);
     }
-    */
-    console.log('Cancel appointment:', appointmentId);
   };
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'confirmed': return 'bg-healthcare-green text-white';
+      case 'confirmed': return 'bg-green-500 text-white';
       case 'pending': return 'bg-yellow-500 text-white';
-      case 'completed': return 'bg-gray-500 text-white';
+      case 'completed': return 'bg-blue-500 text-white';
       case 'cancelled': return 'bg-red-500 text-white';
+      case 'rejected': return 'bg-red-600 text-white';
       default: return 'bg-gray-500 text-white';
     }
+  };
+
+  const formatDate = (dateString) => {
+    return new Date(dateString).toLocaleDateString('en-US', { 
+      weekday: 'long', 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    });
+  };
+
+  const formatTime = (timeString) => {
+    
+    const [hours, minutes] = timeString.split(':');
+    const hour = parseInt(hours);
+    const ampm = hour >= 12 ? 'PM' : 'AM';
+    const displayHour = hour % 12 || 12;
+    return `${displayHour}:${minutes} ${ampm}`;
   };
 
   const renderAppointmentCard = (appointment, showActions = true) => (
@@ -112,7 +162,9 @@ const Appointments = () => {
           <div className="flex space-x-4">
             <Avatar className="w-16 h-16">
               <AvatarImage src={appointment.doctorImage} />
-              <AvatarFallback>DR</AvatarFallback>
+              <AvatarFallback className="bg-primary text-primary-foreground text-xl">
+                {appointment.doctorName.split(' ').map(n => n[0]).join('')}
+              </AvatarFallback>
             </Avatar>
             <div className="flex-1">
               <div className="flex items-center space-x-3 mb-2">
@@ -125,21 +177,34 @@ const Appointments = () => {
               <div className="flex items-center space-x-4 text-sm text-muted-foreground mb-2">
                 <div className="flex items-center">
                   <Calendar className="w-4 h-4 mr-1" />
-                  {new Date(appointment.date).toLocaleDateString('en-US', { 
-                    weekday: 'long', 
-                    year: 'numeric', 
-                    month: 'long', 
-                    day: 'numeric' 
-                  })}
+                  {formatDate(appointment.date)}
                 </div>
                 <div className="flex items-center">
                   <Clock className="w-4 h-4 mr-1" />
-                  {appointment.time}
+                  {formatTime(appointment.time)}
                 </div>
               </div>
               <div className="mb-3">
-                <p className="text-sm font-medium text-foreground mb-1">Type: {appointment.type}</p>
-                <p className="text-sm text-muted-foreground">{appointment.reason}</p>
+                <p className="text-sm font-medium text-foreground mb-1">
+                  Type: <span className="font-normal capitalize">{appointment.type}</span>
+                </p>
+                <p className="text-sm text-foreground">
+                  <span className="font-medium">Reason:</span> {appointment.reason}
+                </p>
+                {appointment.notes && (
+                  <div className="mt-2 p-2 bg-input rounded-md">
+                    {appointment.notes.doctorNotes && (
+                      <p className="text-sm text-muted-foreground">
+                        <strong>Doctor's Notes:</strong> {appointment.notes.doctorNotes}
+                      </p>
+                    )}
+                    {appointment.notes.patientNotes && (
+                      <p className="text-sm text-muted-foreground">
+                        <strong>Patient's Notes:</strong> {appointment.notes.patientNotes}
+                      </p>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -149,20 +214,21 @@ const Appointments = () => {
               {appointment.status === 'confirmed' && (
                 <>
                   <div className="flex space-x-2">
-                    <Button size="sm" variant="secondary">
+                    <Button size="sm" variant="secondary" disabled>
                       <MessageCircle className="w-4 h-4" />
                     </Button>
-                    <Button size="sm" variant="secondary">
+                    <Button size="sm" variant="secondary" disabled>
                       <Phone className="w-4 h-4" />
                     </Button>
-                    <Button size="sm" variant="secondary">
+                    <Button size="sm" variant="secondary" disabled>
                       <Video className="w-4 h-4" />
                     </Button>
                   </div>
                   <Button 
                     size="sm" 
-                    variant="secondary"
+                    variant="outline"
                     onClick={() => handleReschedule(appointment.id)}
+                    disabled={actionLoading === appointment.id}
                   >
                     <Edit className="w-4 h-4 mr-1" />
                     Reschedule
@@ -173,8 +239,9 @@ const Appointments = () => {
                 <>
                   <Button 
                     size="sm" 
-                    variant="secondary"
+                    variant="outline"
                     onClick={() => handleReschedule(appointment.id)}
+                    disabled={actionLoading === appointment.id}
                   >
                     <Edit className="w-4 h-4 mr-1" />
                     Edit
@@ -183,8 +250,13 @@ const Appointments = () => {
                     size="sm" 
                     variant="destructive"
                     onClick={() => handleCancel(appointment.id)}
+                    disabled={actionLoading === appointment.id}
                   >
-                    <Trash2 className="w-4 h-4 mr-1" />
+                    {actionLoading === appointment.id ? (
+                      <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                    ) : (
+                      <Trash2 className="w-4 h-4 mr-1" />
+                    )}
                     Cancel
                   </Button>
                 </>
@@ -195,6 +267,17 @@ const Appointments = () => {
       </CardContent>
     </Card>
   );
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-primary" />
+          <p className="text-foreground">Loading appointments...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -212,7 +295,7 @@ const Appointments = () => {
               <span className="text-xl font-bold text-foreground">HealthConnect</span>
             </div>
           </div>
-          <Button onClick={() => navigate('/book-appointment')}>
+          <Button onClick={() => navigate('/book-appointment')} className="bg-primary hover:bg-primary/90">
             <Plus className="w-4 h-4 mr-2" />
             Book New Appointment
           </Button>
@@ -226,10 +309,31 @@ const Appointments = () => {
           <p className="text-muted-foreground">Manage your upcoming and past appointments</p>
         </div>
 
+        {/* Error Message */}
+        {error && (
+          <Card className="mb-6 border-red-200 bg-red-50">
+            <CardContent className="p-4">
+              <p className="text-red-600">{error}</p>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={fetchAppointments}
+                className="mt-2"
+              >
+                Try Again
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+
         <Tabs defaultValue="upcoming" className="space-y-6">
           <TabsList className="grid w-full max-w-md grid-cols-2">
-            <TabsTrigger value="upcoming">Upcoming</TabsTrigger>
-            <TabsTrigger value="past">Past Appointments</TabsTrigger>
+            <TabsTrigger value="upcoming">
+              Upcoming ({appointments.upcoming.length})
+            </TabsTrigger>
+            <TabsTrigger value="past">
+              Past Appointments ({appointments.past.length})
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="upcoming" className="space-y-4">
@@ -238,12 +342,12 @@ const Appointments = () => {
             ) : (
               <Card className="bg-healthcare-card border-border">
                 <CardContent className="p-12 text-center">
-                  <div className="w-16 h-16 bg-primary/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <div className="w-16 h-16 bg-input rounded-full flex items-center justify-center mx-auto mb-4">
                     <Calendar className="w-8 h-8 text-primary" />
                   </div>
                   <h3 className="text-lg font-semibold text-foreground mb-2">No Upcoming Appointments</h3>
                   <p className="text-muted-foreground mb-4">You don't have any scheduled appointments.</p>
-                  <Button onClick={() => navigate('/book-appointment')}>
+                  <Button onClick={() => navigate('/book-appointment')} className="bg-primary hover:bg-primary/90">
                     <Plus className="w-4 h-4 mr-2" />
                     Book Your First Appointment
                   </Button>
@@ -258,7 +362,7 @@ const Appointments = () => {
             ) : (
               <Card className="bg-healthcare-card border-border">
                 <CardContent className="p-12 text-center">
-                  <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
+                  <div className="w-16 h-16 bg-input rounded-full flex items-center justify-center mx-auto mb-4">
                     <Calendar className="w-8 h-8 text-muted-foreground" />
                   </div>
                   <h3 className="text-lg font-semibold text-foreground mb-2">No Past Appointments</h3>

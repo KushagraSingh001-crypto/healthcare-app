@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -18,8 +18,11 @@ import {
   Mail,
   Phone,
   MapPin,
-  Award
+  Award,
+  Loader2,
+  AlertCircle
 } from 'lucide-react';
+import { doctorAPI } from '../services/api';
 
 const specialities = [
   'General Practitioner',
@@ -36,28 +39,126 @@ const specialities = [
 const DoctorProfile = () => {
   const navigate = useNavigate();
   const [isEditing, setIsEditing] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
   const [profileData, setProfileData] = useState({
-    fullName: 'Dr. Amelia Carter',
-    email: 'amelia.carter@example.com',
-    phone: '+1 (555) 123-4567',
-    speciality: 'Cardiologist',
+    fullName: '',
+    email: '',
+    phone: '',
+    speciality: '',
     otherSpeciality: '',
-    yearsOfExperience: '5',
-    clinicName: 'City Heart Clinic',
-    clinicAddress: '123 Health St, Mediville, NY 10001',
-    bio: 'Board-certified cardiologist with a focus on preventive care and patient education.',
-    licenseNumber: 'MD-12345-NY',
-    education: 'Harvard Medical School, Johns Hopkins Residency'
+    yearsOfExperience: 0,
+    clinicName: '',
+    clinicAddress: '',
+    bio: '',
+    licenseNumber: '',
+    education: ''
   });
 
-  const handleSave = () => {
-    // Here you would save the profile data to your backend
-    setIsEditing(false);
+  
+  useEffect(() => {
+    loadDoctorProfile();
+  }, []);
+
+  const loadDoctorProfile = async () => {
+    try {
+      setLoading(true);
+      setError('');
+      const response = await doctorAPI.getProfile();
+      const profile = response.data.data;
+      
+      
+      setProfileData({
+        fullName: profile.fullName || '',
+        email: profile.email || '',
+        phone: profile.phone || '',
+        speciality: profile.speciality || '',
+        otherSpeciality: profile.otherSpeciality || '',
+        yearsOfExperience: profile.yearsOfExperience || 0,
+        clinicName: profile.clinicInfo?.clinicName || '',
+        clinicAddress: profile.clinicInfo?.clinicAddress || '',
+        bio: profile.bio || '',
+        licenseNumber: profile.licenseNumber || '',
+        education: profile.education || ''
+      });
+    } catch (err) {
+      console.error('Error loading profile:', err);
+      setError(err.response?.data?.message || 'Failed to load profile');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSave = async () => {
+    try {
+      setSaving(true);
+      setError('');
+
+      
+      const updateData = {
+        fullName: profileData.fullName,
+        email: profileData.email,
+        phone: profileData.phone,
+        speciality: profileData.speciality,
+        otherSpeciality: profileData.speciality === 'Other' ? profileData.otherSpeciality : '',
+        yearsOfExperience: profileData.yearsOfExperience || 0,
+        licenseNumber: profileData.licenseNumber,
+        education: profileData.education,
+        clinicInfo: {
+          clinicName: profileData.clinicName,
+          clinicAddress: profileData.clinicAddress
+        },
+        bio: profileData.bio
+      };
+
+      const response = await doctorAPI.updateProfile(updateData);
+      
+      
+      const updatedProfile = response.data.data;
+      setProfileData({
+        fullName: updatedProfile.fullName || '',
+        email: updatedProfile.email || '',
+        phone: updatedProfile.phone || '',
+        speciality: updatedProfile.speciality || '',
+        otherSpeciality: updatedProfile.otherSpeciality || '',
+        yearsOfExperience: updatedProfile.yearsOfExperience || 0,
+        clinicName: updatedProfile.clinicInfo?.clinicName || '',
+        clinicAddress: updatedProfile.clinicInfo?.clinicAddress || '',
+        bio: updatedProfile.bio || '',
+        licenseNumber: updatedProfile.licenseNumber || '',
+        education: updatedProfile.education || ''
+      });
+
+      setIsEditing(false);
+      
+    } catch (err) {
+      console.error('Error saving profile:', err);
+      setError(err.response?.data?.message || 'Failed to save profile');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleInputChange = (field, value) => {
     setProfileData(prev => ({ ...prev, [field]: value }));
   };
+
+  const handleCancel = () => {
+    setIsEditing(false);
+    loadDoctorProfile(); 
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="flex items-center space-x-2">
+          <Loader2 className="w-6 h-6 animate-spin" />
+          <span>Loading profile...</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -78,12 +179,21 @@ const DoctorProfile = () => {
           <div className="flex items-center space-x-3">
             {isEditing ? (
               <>
-                <Button variant="secondary" onClick={() => setIsEditing(false)}>
+                <Button variant="secondary" onClick={handleCancel} disabled={saving}>
                   Cancel
                 </Button>
-                <Button onClick={handleSave}>
-                  <Save className="w-4 h-4 mr-2" />
-                  Save Changes
+                <Button onClick={handleSave} disabled={saving}>
+                  {saving ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="w-4 h-4 mr-2" />
+                      Save Changes
+                    </>
+                  )}
                 </Button>
               </>
             ) : (
@@ -96,6 +206,16 @@ const DoctorProfile = () => {
         </div>
       </div>
 
+      {/* Error Message */}
+      {error && (
+        <div className="max-w-4xl mx-auto p-6">
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-center space-x-2">
+            <AlertCircle className="w-5 h-5 text-red-500" />
+            <span className="text-red-700">{error}</span>
+          </div>
+        </div>
+      )}
+
       {/* Main Content */}
       <div className="max-w-4xl mx-auto p-6">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -107,7 +227,7 @@ const DoctorProfile = () => {
                   <Avatar className="w-32 h-32">
                     <AvatarImage src="" />
                     <AvatarFallback className="bg-primary text-primary-foreground text-3xl">
-                      DC
+                      {profileData.fullName.split(' ').map(n => n[0]).join('').toUpperCase() || 'DR'}
                     </AvatarFallback>
                   </Avatar>
                   {isEditing && (
@@ -120,7 +240,11 @@ const DoctorProfile = () => {
                   )}
                 </div>
                 <CardTitle className="text-foreground">{profileData.fullName}</CardTitle>
-                <p className="text-muted-foreground">{profileData.speciality}</p>
+                <p className="text-muted-foreground">
+                  {profileData.speciality === 'Other' && profileData.otherSpeciality
+                    ? profileData.otherSpeciality
+                    : profileData.speciality}
+                </p>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex items-center space-x-3 text-sm">
@@ -160,6 +284,7 @@ const DoctorProfile = () => {
                         value={profileData.fullName}
                         onChange={(e) => handleInputChange('fullName', e.target.value)}
                         className="mt-1 bg-input border-border text-foreground"
+                        required
                       />
                     ) : (
                       <p className="mt-1 text-foreground">{profileData.fullName}</p>
@@ -174,6 +299,7 @@ const DoctorProfile = () => {
                         value={profileData.email}
                         onChange={(e) => handleInputChange('email', e.target.value)}
                         className="mt-1 bg-input border-border text-foreground"
+                        required
                       />
                     ) : (
                       <p className="mt-1 text-foreground">{profileData.email}</p>
@@ -243,9 +369,25 @@ const DoctorProfile = () => {
                         </SelectContent>
                       </Select>
                     ) : (
-                      <p className="mt-1 text-foreground">{profileData.speciality}</p>
+                      <p className="mt-1 text-foreground">
+                        {profileData.speciality === 'Other' && profileData.otherSpeciality
+                          ? profileData.otherSpeciality
+                          : profileData.speciality}
+                      </p>
                     )}
                   </div>
+                  {isEditing && profileData.speciality === 'Other' && (
+                    <div>
+                      <Label htmlFor="otherSpeciality" className="text-foreground">Other Speciality</Label>
+                      <Input
+                        id="otherSpeciality"
+                        value={profileData.otherSpeciality}
+                        onChange={(e) => handleInputChange('otherSpeciality', e.target.value)}
+                        className="mt-1 bg-input border-border text-foreground"
+                        placeholder="Specify your speciality"
+                      />
+                    </div>
+                  )}
                   <div>
                     <Label htmlFor="yearsOfExperience" className="text-foreground">Years of Experience</Label>
                     {isEditing ? (
@@ -257,7 +399,7 @@ const DoctorProfile = () => {
                         onChange={(e) =>
                           handleInputChange(
                             'yearsOfExperience',
-                            Math.max(0, Number(e.target.value))
+                            Math.max(0, parseInt(e.target.value) || 0)
                           )
                         }
                         className="mt-1 bg-input border-border text-foreground"
@@ -301,9 +443,10 @@ const DoctorProfile = () => {
                       value={profileData.bio}
                       onChange={(e) => handleInputChange('bio', e.target.value)}
                       className="mt-1 bg-input border-border text-foreground min-h-[120px]"
+                      placeholder="Tell patients about yourself, your experience, and approach to healthcare..."
                     />
                   ) : (
-                    <p className="mt-1 text-foreground">{profileData.bio}</p>
+                    <p className="mt-1 text-foreground">{profileData.bio || 'No bio provided'}</p>
                   )}
                 </div>
               </CardContent>

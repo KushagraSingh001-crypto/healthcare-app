@@ -3,7 +3,8 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Stethoscope } from 'lucide-react';
+import { Stethoscope, Loader2 } from 'lucide-react';
+import { userAPI } from '../services/api';
 import healthcareHero from '@/assets/healthcare-hero.jpg';
 
 const Signup = () => {
@@ -16,19 +17,61 @@ const Signup = () => {
   const [password, setPassword] = useState('');
   const [speciality, setSpeciality] = useState('');
   const [otherSpeciality, setOtherSpeciality] = useState('');
-  const [yearsExperience, setYearsExperience] = useState(1);
+  const [yearsOfExperience, setYearsExperience] = useState(1);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     const roleParam = searchParams.get('role');
     if (roleParam) setRole(roleParam);
   }, [searchParams]);
 
-  const handleSignup = (e: React.FormEvent) => {
+  const handleSignup = async (e) => {
     e.preventDefault();
-    if (role === 'patient') {
-      navigate('/patient-dashboard');
-    } else {
-      navigate('/doctor-dashboard');
+    setError('');
+    setLoading(true);
+
+    try {
+      
+      const registrationData = {
+        fullName: fullName.trim(),
+        email: email.trim(),
+        phone: phone.trim(),
+        password,
+        role,
+        ...(role === 'doctor' && {
+          speciality,
+          yearsOfExperience,
+          ...(speciality === 'Other' && { otherSpeciality: otherSpeciality.trim() })
+        })
+      };
+
+      
+      const response = await userAPI.register(registrationData);
+
+      
+      if (response.data?.data?.accessToken) {
+        localStorage.setItem('accessToken', response.data.data.accessToken);
+      }
+
+      
+      if (role === 'patient') {
+        navigate('/patient-dashboard');
+      } else {
+        navigate('/doctor-dashboard');
+      }
+    } catch (error) {
+      console.error('Registration error:', error);
+      
+      if (error.response?.data?.message) {
+        setError(error.response.data.message);
+      } else if (error.message) {
+        setError(error.message);
+      } else {
+        setError('Registration failed. Please try again.');
+      }
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -44,14 +87,18 @@ const Signup = () => {
             <span className="text-xl font-bold text-foreground">HealthConnect</span>
           </div>
         </nav>
-
         <div className="flex-1 flex items-center justify-center px-6">
           <div className="w-full max-w-md">
             <div className="mb-8">
               <h1 className="text-3xl font-bold text-foreground mb-2">Create your account</h1>
               <p className="text-muted-foreground">Join us to manage your health with ease.</p>
             </div>
-
+            {/* Error Message */}
+            {error && (
+              <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-md">
+                <p className="text-red-800 text-sm">{error}</p>
+              </div>
+            )}
             <form onSubmit={handleSignup} className="space-y-6">
               {/* Role Selection */}
               <div>
@@ -62,6 +109,7 @@ const Signup = () => {
                     variant={role === 'patient' ? 'default' : 'secondary'}
                     onClick={() => setRole('patient')}
                     className="flex-1"
+                    disabled={loading}
                   >
                     Patient
                   </Button>
@@ -70,12 +118,12 @@ const Signup = () => {
                     variant={role === 'doctor' ? 'default' : 'secondary'}
                     onClick={() => setRole('doctor')}
                     className="flex-1"
+                    disabled={loading}
                   >
                     Doctor
                   </Button>
                 </div>
               </div>
-
               {/* Full Name */}
               <div>
                 <Label htmlFor="fullName" className="text-foreground">Full Name</Label>
@@ -87,9 +135,9 @@ const Signup = () => {
                   placeholder="John Doe"
                   className="mt-1 bg-input border-border text-foreground"
                   required
+                  disabled={loading}
                 />
               </div>
-
               {/* Phone */}
               <div>
                 <Label htmlFor="phone" className="text-foreground">Contact Number</Label>
@@ -101,9 +149,9 @@ const Signup = () => {
                   placeholder="(123) 456-7890"
                   className="mt-1 bg-input border-border text-foreground"
                   required
+                  disabled={loading}
                 />
               </div>
-
               {/* Email */}
               <div>
                 <Label htmlFor="email" className="text-foreground">Email address</Label>
@@ -115,9 +163,9 @@ const Signup = () => {
                   placeholder="you@example.com"
                   className="mt-1 bg-input border-border text-foreground"
                   required
+                  disabled={loading}
                 />
               </div>
-
               {/* Password */}
               <div>
                 <Label htmlFor="password" className="text-foreground">Password</Label>
@@ -129,9 +177,10 @@ const Signup = () => {
                   placeholder="••••••••"
                   className="mt-1 bg-input border-border text-foreground"
                   required
+                  disabled={loading}
+                  minLength={6}
                 />
               </div>
-
               {/* Doctor Fields */}
               {role === 'doctor' && (
                 <>
@@ -144,6 +193,7 @@ const Signup = () => {
                       onChange={(e) => setSpeciality(e.target.value)}
                       className="mt-1 w-full p-2 border border-border rounded-md bg-input text-foreground"
                       required
+                      disabled={loading}
                     >
                       <option value="">Select Speciality</option>
                       <option value="Cardiologist">Cardiologist</option>
@@ -155,7 +205,6 @@ const Signup = () => {
                       <option value="Other">Other</option>
                     </select>
                   </div>
-
                   {/* Other Speciality */}
                   {speciality === 'Other' && (
                     <div>
@@ -168,10 +217,10 @@ const Signup = () => {
                         placeholder="Enter speciality"
                         className="mt-1 bg-input border-border text-foreground"
                         required
+                        disabled={loading}
                       />
                     </div>
                   )}
-
                   {/* Years of Experience */}
                   <div>
                     <Label htmlFor="experience" className="text-foreground">Years of Experience</Label>
@@ -179,35 +228,45 @@ const Signup = () => {
                       id="experience"
                       type="number"
                       min={0}
-                      value={yearsExperience}
+                      max={50}
+                      value={yearsOfExperience.toString()}
                       onChange={(e) => setYearsExperience(Number(e.target.value))}
                       className="mt-1 bg-input border-border text-foreground"
                       required
+                      disabled={loading}
                     />
                   </div>
                 </>
               )}
-
-              <Button type="submit" className="w-full">
-                Sign up
+              <Button type="submit" className="w-full" disabled={loading}>
+                {loading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Creating account...
+                  </>
+                ) : (
+                  'Sign up'
+                )}
               </Button>
             </form>
-
             <div className="text-center mt-6">
               <span className="text-muted-foreground">Already a member? </span>
-              <button onClick={() => navigate('/login')} className="text-primary hover:underline">
+              <button
+                onClick={() => navigate('/login')}
+                className="text-primary hover:underline"
+                disabled={loading}
+              >
                 Log in here
               </button>
             </div>
           </div>
         </div>
       </div>
-
       {/* Right Side - Image */}
       <div className="flex-1 relative">
-        <img 
-          src={healthcareHero} 
-          alt="Healthcare professional with tablet" 
+        <img
+          src={healthcareHero}
+          alt="Healthcare professional with tablet"
           className="w-full h-full object-cover"
         />
         <div className="absolute inset-0 bg-gradient-to-r from-transparent to-background/20 flex items-end">
