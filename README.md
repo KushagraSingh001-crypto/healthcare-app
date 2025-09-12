@@ -143,7 +143,7 @@ HealthConnect/
 
 **Backend**
 * Node.js + Express.js
-* MongoDB/MySQL/PostgreSQL
+* MongoDB
 * JWT Authentication
 * Gmail SMTP Integration
 * Custom error handling
