@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -9,18 +9,45 @@ import { userAPI } from '../services/api';
 
 const Login = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [role, setRole] = useState('patient');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
+
+  useEffect(() => {
+    
+    if (location.state?.message) {
+      setSuccessMessage(location.state.message);
+    }
+    if (location.state?.email) {
+      setEmail(location.state.email);
+    }
+
+   
+    clearExistingAuth();
+  }, [location.state]);
+
+  const clearExistingAuth = () => {
+    
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('refreshToken');
+    
+    
+    document.cookie = 'accessToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+    document.cookie = 'refreshToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+  };
 
   const handleLogin = async (e) => {
     e.preventDefault();
     setError('');
+    setSuccessMessage(''); 
     setLoading(true);
 
     try {
+      console.log('Starting login process...');
       
       const loginData = {
         email: email.trim(),
@@ -28,18 +55,16 @@ const Login = () => {
         role 
       };
 
+      console.log('Login data:', { ...loginData, password: '[HIDDEN]' });
       
       const response = await userAPI.login(loginData);
+      console.log('Login response:', response.data);
+
+      const { user } = response.data.data;
 
       
-      const { user, accessToken, refreshToken } = response.data.data;
-
+      console.log('Login successful, redirecting to dashboard...');
       
-      localStorage.setItem('accessToken', accessToken);
-      if (refreshToken) {
-        localStorage.setItem('refreshToken', refreshToken);
-      }
-
       
       if (user.role === 'patient') {
         navigate('/patient-dashboard');
@@ -51,7 +76,6 @@ const Login = () => {
 
     } catch (error) {
       console.error('Login error:', error);
-      
       
       if (error.response?.data?.message) {
         setError(error.response.data.message);
@@ -84,6 +108,13 @@ const Login = () => {
             <h1 className="text-4xl font-bold text-foreground mb-4">Welcome Back</h1>
             <p className="text-muted-foreground">Sign in to continue to your dashboard.</p>
           </div>
+
+          {/* Success Message from Registration */}
+          {successMessage && (
+            <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-md">
+              <p className="text-green-800 text-sm">{successMessage}</p>
+            </div>
+          )}
 
           {/* Error Message */}
           {error && (

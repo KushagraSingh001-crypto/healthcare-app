@@ -5,7 +5,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Stethoscope, Loader2 } from 'lucide-react';
 import { userAPI } from '../services/api';
-import healthcareHero from '@/assets/healthcare-hero.jpg';
 
 const Signup = () => {
   const navigate = useNavigate();
@@ -32,7 +31,6 @@ const Signup = () => {
     setLoading(true);
 
     try {
-      
       const registrationData = {
         fullName: fullName.trim(),
         email: email.trim(),
@@ -46,20 +44,17 @@ const Signup = () => {
         })
       };
 
-      
       const response = await userAPI.register(registrationData);
-
       
-      if (response.data?.data?.accessToken) {
-        localStorage.setItem('accessToken', response.data.data.accessToken);
-      }
+      // DON'T store tokens or redirect automatically
+      // Instead, redirect to login with success message
+      navigate('/login', {
+        state: {
+          message: 'Account created successfully! Please log in to continue.',
+          email: email.trim()
+        }
+      });
 
-      
-      if (role === 'patient') {
-        navigate('/patient-dashboard');
-      } else {
-        navigate('/doctor-dashboard');
-      }
     } catch (error) {
       console.error('Registration error:', error);
       
@@ -264,15 +259,11 @@ const Signup = () => {
       </div>
       {/* Right Side - Image */}
       <div className="flex-1 relative">
-        <img
-          src={healthcareHero}
-          alt="Healthcare professional with tablet"
-          className="w-full h-full object-cover"
-        />
-        <div className="absolute inset-0 bg-gradient-to-r from-transparent to-background/20 flex items-end">
-          <div className="p-12 text-white">
+        <div className="w-full h-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
+          <div className="text-center text-white p-12">
+            <Stethoscope className="w-24 h-24 mx-auto mb-8 opacity-80" />
             <h2 className="text-3xl font-bold mb-4">Your Health, Simplified</h2>
-            <p className="text-lg text-gray-200">
+            <p className="text-lg opacity-90">
               Access your medical records, book appointments, and connect with your doctor, all in one place.
             </p>
           </div>

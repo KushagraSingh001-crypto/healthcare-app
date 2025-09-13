@@ -13,7 +13,7 @@ const userSchema = new mongoose.Schema({
     email: {
         type: String,
         required: [true, 'Email is required'],
-        unique: true, 
+        unique: true,
         lowercase: true,
         match: [/^\S+@\S+\.\S+$/, 'Please provide a valid email address']
     },
@@ -37,24 +37,25 @@ const userSchema = new mongoose.Schema({
     emailVerified: { type: Boolean, default: false },
     lastLogin: { type: Date, default: null },
     refreshToken: { type: String, default: null },
+    
     speciality: {
         type: String,
         required: function() { return this.role === 'doctor' },
         enum: [
-          'Cardiologist',
-          'Dermatologist', 
-          'Neurologist',
-          'Pediatrician',
-          'Orthopedic',
-          'General Physician',
-          'Other'
+            'Cardiologist',
+            'Dermatologist', 
+            'Neurologist',
+            'Pediatrician',
+            'Orthopedic',
+            'General Physician',
+            'Other'
         ]
     },
     otherSpeciality: {
         type: String,
         required: function() { return this.role === 'doctor' && this.speciality === 'Other' }
     },
-    yearsOfExperience: {  
+    yearsOfExperience: {
         type: Number,
         required: function() { return this.role === 'doctor' },
         min: [0, 'Years of experience cannot be negative']
@@ -62,7 +63,7 @@ const userSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 
-userSchema.index({ role: 1 })
+userSchema.index({ role: 1 });
 
 
 userSchema.pre('save', async function (next) {
@@ -76,25 +77,51 @@ userSchema.pre('save', async function (next) {
     }
 });
 
+
+userSchema.pre('findOneAndUpdate', function() {
+    if (this.getUpdate().$set && this.getUpdate().$set.refreshToken) {
+        this.getUpdate().$set.lastLogin = new Date();
+    }
+});
+
+
 userSchema.methods.comparePassword = async function (candidatePassword) {
     return await bcrypt.compare(candidatePassword, this.password);
 };
 
+
 userSchema.methods.generateAccessToken = function () {
+    const payload = {
+        _id: this._id, 
+        email: this.email,
+        fullName: this.fullName,
+        role: this.role
+    };
+    
+    console.log('Generating access token with payload:', payload);
+    
     return jwt.sign(
-        { _id: this._id, email: this.email, fullName: this.fullName },
+        payload,
         process.env.ACCESS_TOKEN_SECRET,
-        { expiresIn: process.env.ACCESS_TOKEN_EXPIRY }
+        { expiresIn: process.env.ACCESS_TOKEN_EXPIRY || '1d' }
     );
 };
 
+
 userSchema.methods.generateRefreshToken = function () {
+    const payload = {
+        _id: this._id 
+    };
+    
+    console.log('Generating refresh token with payload:', payload);
+    
     return jwt.sign(
-        { _id: this._id },
+        payload,
         process.env.REFRESH_TOKEN_SECRET,
-        { expiresIn: process.env.REFRESH_TOKEN_EXPIRY }
+        { expiresIn: process.env.REFRESH_TOKEN_EXPIRY || '10d' }
     );
 };
+
 
 userSchema.methods.getPublicProfile = function () {
     const user = this.toObject();
@@ -102,5 +129,20 @@ userSchema.methods.getPublicProfile = function () {
     delete user.refreshToken;
     return user;
 };
+
+
+userSchema.statics.findWithPassword = function(query) {
+    return this.findOne(query).select('+password');
+};
+
+
+userSchema.virtual('fullSpeciality').get(function() {
+    if (this.role !== 'doctor') return null;
+    return this.speciality === 'Other' ? this.otherSpeciality : this.speciality;
+});
+
+
+userSchema.set('toJSON', { virtuals: true });
+userSchema.set('toObject', { virtuals: true });
 
 export const User = mongoose.model("User", userSchema);
